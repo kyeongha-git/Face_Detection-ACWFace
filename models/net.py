@@ -52,6 +52,21 @@ def conv_dw(inp, oup, stride, leaky=0.1):
         nn.LeakyReLU(negative_slope= leaky,inplace=True),
     )
 
+def channel_shuffle(x, groups):
+    batchsize, num_channels, height, width = x.data.size()
+
+    channels_per_group = num_channels // groups
+    
+    x = x.view(batchsize, groups, 
+        channels_per_group, height, width)
+
+    x = torch.transpose(x, 1, 2).contiguous()
+
+    # flatten
+    x = x.view(batchsize, -1, height, width)
+
+    return x
+
 class SCM(nn.Module):
     def __init__(self, in_channel, out_channel):
         super(SCM, self).__init__()
@@ -70,7 +85,6 @@ class SCM(nn.Module):
         self.ecm_1 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky = leaky)
         self.ecm_2 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
 
-        self.shuffle_conv = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=1, padding=1, groups=out_channel, bias=False)
         self.shuffle_bn = nn.BatchNorm2d(out_channel)
         
 
@@ -88,10 +102,8 @@ class SCM(nn.Module):
 
         out = torch.cat([conv3X3, conv5X5, conv7X7, conv_ecm_2], dim=1)
 
-        shuffle_out = self.shuffle_conv(out)
-        shuffle_out = self.shuffle_bn(shuffle_out)
-
-        out = F.relu(shuffle_out)
+        out = channel_shuffle(out, groups = 4)
+        out = self.conv_bn(out)
         return out
 
 class WFPN(nn.Module):
@@ -202,10 +214,9 @@ class EDAM(nn.Module):
 
     def forward(self, x):
         b, c, _, _ = x.size()
-        residual=x
         out=x*self.ca(x)
         out=out*self.sa(out)
-        return out+residual
+        return out
 
 
 
