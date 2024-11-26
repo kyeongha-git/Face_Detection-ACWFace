@@ -12,27 +12,26 @@ import math
 
 def conv_bn(inp, oup, stride = 1, leaky = 0):
     return nn.Sequential(
-        DeformableConv2d(inp, oup, 3, stride, 1, bias=False),
-        # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        nn.BatchNorm2d(oup),
-        nn.LeakyReLU(negative_slope=leaky, inplace=True)
-    )
-
-def conv_bn_m(inp, oup, stride = 1, leaky = 0):
-    return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
         nn.LeakyReLU(negative_slope=leaky, inplace=True)
     )
-    
 
 def conv_bn_no_relu(inp, oup, stride):
     return nn.Sequential(
-        DeformableConv2d(inp, oup, 3, stride, 1, bias=False),
+        nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
     )
+
+def conv_bn_no_relu(inp, oup, stride):
+    return nn.Sequential(
+        nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
+        # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
+        nn.BatchNorm2d(oup),
+    )
+
 
 def conv_bn1X1(inp, oup, stride, leaky=0):
     return nn.Sequential(
@@ -74,6 +73,7 @@ class SCM(nn.Module):
         leaky = 0
         if (out_channel <= 64):
             leaky = 0.1
+
         self.conv3X3 = conv_bn_no_relu(in_channel, out_channel//4, stride=1)
 
         self.conv5X5_1 = conv_bn(in_channel, out_channel//4, stride=1, leaky = leaky)
@@ -85,7 +85,7 @@ class SCM(nn.Module):
         self.ecm_1 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky = leaky)
         self.ecm_2 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
 
-        self.shuffle_bn = nn.BatchNorm2d(out_channel)
+        self.shuffle_conv_bn = conv_bn(out_channel, out_channel, stride = 1, leaky = leaky)
         
 
     def forward(self, input):
@@ -103,7 +103,7 @@ class SCM(nn.Module):
         out = torch.cat([conv3X3, conv5X5, conv7X7, conv_ecm_2], dim=1)
 
         out = channel_shuffle(out, groups = 4)
-        out = self.conv_bn(out)
+        out = self.shuffle_conv_bn(out)
         return out
 
 class WFPN(nn.Module):
@@ -225,7 +225,7 @@ class MobileNetV1(nn.Module):
     def __init__(self):
         super(MobileNetV1, self).__init__()
         self.stage1 = nn.Sequential(
-            conv_bn_m(3, 8, 2, leaky = 0.1),    # 3
+            conv_bn(3, 8, 2, leaky = 0.1),    # 3
             conv_dw(8, 16, 1),   # 7
             conv_dw(16, 32, 2),  # 11
             conv_dw(32, 32, 1),  # 19
