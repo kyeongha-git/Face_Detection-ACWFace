@@ -13,7 +13,6 @@ import math
 def conv_bn(inp, oup, stride = 1, leaky = 0):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
         nn.LeakyReLU(negative_slope=leaky, inplace=True)
     )
@@ -28,7 +27,6 @@ def conv_bn_no_relu(inp, oup, stride):
 def conv_bn_no_relu(inp, oup, stride):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
     )
 
@@ -97,7 +95,7 @@ class SCM(nn.Module):
         conv7X7_2 = self.conv7X7_2(conv5X5_1)
         conv7X7 = self.conv7x7_3(conv7X7_2)
 
-        conv_ecm_1 = self.ecm_1(conv5X5_1)
+        conv_ecm_1 = self.ecm_1(conv7X7_2)
         conv_ecm_2 = self.ecm_2(conv_ecm_1)
 
         out = torch.cat([conv3X3, conv5X5, conv7X7, conv_ecm_2], dim=1)
