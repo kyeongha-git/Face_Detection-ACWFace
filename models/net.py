@@ -42,21 +42,6 @@ def conv_dw(inp, oup, stride, leaky=0.1):
         nn.LeakyReLU(negative_slope= leaky,inplace=True),
     )
 
-def channel_shuffle(x, groups):
-    batchsize, num_channels, height, width = x.data.size()
-
-    channels_per_group = num_channels // groups
-    
-    x = x.view(batchsize, groups, 
-        channels_per_group, height, width)
-
-    x = torch.transpose(x, 1, 2).contiguous()
-
-    # flatten
-    x = x.view(batchsize, -1, height, width)
-
-    return x
-
 class SCM(nn.Module):
     def __init__(self, in_channel, out_channel):
         super(SCM, self).__init__()
@@ -64,37 +49,39 @@ class SCM(nn.Module):
         leaky = 0
         if (out_channel <= 64):
             leaky = 0.1
-
         self.conv3X3 = conv_bn_no_relu(in_channel, out_channel//4, stride=1)
-
+        
         self.conv5X5_1 = conv_bn(in_channel, out_channel//4, stride=1, leaky = leaky)
         self.conv5X5_2 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
-
+        
         self.conv7X7_2 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky = leaky)
         self.conv7x7_3 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
-
+        
         self.ecm_1 = conv_bn(out_channel//4, out_channel//4, stride=1, leaky = leaky)
         self.ecm_2 = conv_bn_no_relu(out_channel//4, out_channel//4, stride=1)
-
-        self.shuffle_conv_bn = conv_bn(out_channel, out_channel, stride = 1, leaky = leaky)
         
+        self.shuffle_conv = nn.Conv2d(out_channel, out_channel, kernel_size=3, stride=1, padding=1, groups=out_channel, bias=False)
+        
+        self.shuffle_bn = nn.BatchNorm2d(out_channel)
 
-    def forward(self, input):
+def forward(self, input):
         conv3X3 = self.conv3X3(input)
-
+    
         conv5X5_1 = self.conv5X5_1(input)
         conv5X5 = self.conv5X5_2(conv5X5_1)
-
+        
         conv7X7_2 = self.conv7X7_2(conv5X5_1)
         conv7X7 = self.conv7x7_3(conv7X7_2)
-
+    
         conv_ecm_1 = self.ecm_1(conv7X7_2)
         conv_ecm_2 = self.ecm_2(conv_ecm_1)
-
+    
         out = torch.cat([conv3X3, conv5X5, conv7X7, conv_ecm_2], dim=1)
-
-        out = channel_shuffle(out, groups = 4)
-        out = self.shuffle_conv_bn(out)
+        
+        shuffle_out = self.shuffle_conv(out)
+        shuffle_out = self.shuffle_bn(shuffle_out)
+        
+        out = F.relu(shuffle_out)
         return out
         
 class WFPN(nn.Module):
@@ -116,11 +103,15 @@ class WFPN(nn.Module):
         output1 = self.output1(input[0]) #input[0] = B_0, output1 = O_1
         output2 = self.output2(input[1]) #input[1] = B_1, output2 = O_2
         output3 = self.output3(input[2]) #input[2] = B_2, output3 = O_3
+        
         up3 = F.interpolate(output3, size=[output2.size(2), output2.size(3)], mode="nearest")
         alpha_1 = torch.sigmoid(self.alpha_conv1(up3))
+        
         output2 = self.merge1(alpha_1 * up3 + (1-alpha_1) * output2)
+        
         up2 = F.interpolate(output2, size=[output1.size(2), output1.size(3)], mode="nearest")
         alpha_2 = torch.sigmoid(self.alpha_conv2(up2))
+        
         output1 = self.merge2(alpha_2 * up2 + (1-alpha_2) * output1)
         
         out = [output1, output2, output3]
@@ -141,15 +132,19 @@ class ChannelAttention(nn.Module):
         self.sigmoid = nn.Sigmoid()
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
+        
     def forward(self, x):
         avg_pool = self.avg_pool(x)
         max_pool = self.max_pool(x)
+        
         avg_pool_1d = avg_pool.view(x.size(0), 1, -1)
         max_pool_1d = max_pool.view(x.size(0), 1, -1)
+        
         # Adaptive 1D Convolution
         avg_out = self.sigmoid(self.conv1d(avg_pool_1d))
         max_out = self.sigmoid(self.conv1d(max_pool_1d))
         combined = avg_out + max_out
+        
         out = self.sigmoid(combined)
         return out.view(x.size(0), -1, 1, 1)
         
