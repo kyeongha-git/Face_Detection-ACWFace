@@ -13,37 +13,30 @@ import math
 def conv_bn(inp, oup, stride = 1, leaky = 0):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
+        # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
         nn.LeakyReLU(negative_slope=leaky, inplace=True)
     )
-
+    
 def conv_bn_no_relu(inp, oup, stride):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         # nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
         nn.BatchNorm2d(oup),
     )
-
-def conv_bn_no_relu(inp, oup, stride):
-    return nn.Sequential(
-        nn.Conv2d(inp, oup, 3, stride, 1, bias=False),
-        nn.BatchNorm2d(oup),
-    )
-
-
+    
 def conv_bn1X1(inp, oup, stride, leaky=0):
     return nn.Sequential(
         nn.Conv2d(inp, oup, 1, stride, padding=0, bias=False),
         nn.BatchNorm2d(oup),
         nn.LeakyReLU(negative_slope=leaky, inplace=True)
     )
-
+    
 def conv_dw(inp, oup, stride, leaky=0.1):
     return nn.Sequential(
         nn.Conv2d(inp, inp, 3, stride, 1, groups=inp, bias=False),
         nn.BatchNorm2d(inp),
         nn.LeakyReLU(negative_slope= leaky,inplace=True),
-
         nn.Conv2d(inp, oup, 1, 1, 0, bias=False),
         nn.BatchNorm2d(oup),
         nn.LeakyReLU(negative_slope= leaky,inplace=True),
@@ -103,7 +96,7 @@ class SCM(nn.Module):
         out = channel_shuffle(out, groups = 4)
         out = self.shuffle_conv_bn(out)
         return out
-
+        
 class WFPN(nn.Module):
     def __init__(self,in_channels_list,out_channels):
         super(WFPN,self).__init__()
@@ -113,36 +106,31 @@ class WFPN(nn.Module):
         self.output1 = conv_bn1X1(in_channels_list[0], out_channels, stride = 1, leaky = leaky)
         self.output2 = conv_bn1X1(in_channels_list[1], out_channels, stride = 1, leaky = leaky)
         self.output3 = conv_bn1X1(in_channels_list[2], out_channels, stride = 1, leaky = leaky)
-
         self.merge1 = conv_bn(out_channels, out_channels, leaky = leaky)
         self.merge2 = conv_bn(out_channels, out_channels, leaky = leaky)
-
         self.alpha_conv1 = nn.Conv2d(out_channels, 1, kernel_size=1, stride=1)
         self.alpha_conv2 = nn.Conv2d(out_channels, 1, kernel_size=1, stride=1)
         
     def forward(self, input):
         # names = list(input.keys())
-
         output1 = self.output1(input[0]) #input[0] = B_0, output1 = O_1
         output2 = self.output2(input[1]) #input[1] = B_1, output2 = O_2
         output3 = self.output3(input[2]) #input[2] = B_2, output3 = O_3
-
         up3 = F.interpolate(output3, size=[output2.size(2), output2.size(3)], mode="nearest")
         alpha_1 = torch.sigmoid(self.alpha_conv1(up3))
         output2 = self.merge1(alpha_1 * up3 + (1-alpha_1) * output2)
-
         up2 = F.interpolate(output2, size=[output1.size(2), output1.size(3)], mode="nearest")
         alpha_2 = torch.sigmoid(self.alpha_conv2(up2))
         output1 = self.merge2(alpha_2 * up2 + (1-alpha_2) * output1)
         
         out = [output1, output2, output3]
         return out
-
+        
 class AdaptiveKernelSize:
     def get_kernel_size(channels):
         k = math.ceil((math.log2(channels) + 1) / 2)
         return k if k % 2 == 1 else k + 1
-
+        
 class ChannelAttention(nn.Module):
     def __init__(self, channels, reduction=16):
         super(ChannelAttention, self).__init__()
@@ -151,26 +139,20 @@ class ChannelAttention(nn.Module):
             1, 1, kernel_size=adaptive_kernel_size, stride=1, padding=adaptive_kernel_size // 2, bias=False
         )
         self.sigmoid = nn.Sigmoid()
-
         self.avg_pool = nn.AdaptiveAvgPool2d(1)
         self.max_pool = nn.AdaptiveMaxPool2d(1)
-
     def forward(self, x):
         avg_pool = self.avg_pool(x)
         max_pool = self.max_pool(x)
-
         avg_pool_1d = avg_pool.view(x.size(0), 1, -1)
         max_pool_1d = max_pool.view(x.size(0), 1, -1)
-
         # Adaptive 1D Convolution
         avg_out = self.sigmoid(self.conv1d(avg_pool_1d))
         max_out = self.sigmoid(self.conv1d(max_pool_1d))
-
         combined = avg_out + max_out
         out = self.sigmoid(combined)
-
         return out.view(x.size(0), -1, 1, 1)
-
+        
 class SpatialAttention(nn.Module):
     def __init__(self,kernel_size=7):
         super().__init__()
@@ -185,17 +167,13 @@ class SpatialAttention(nn.Module):
         output=self.conv(result)
         output=self.sigmoid(output)
         return output
-
-
-
+        
 class EDAM(nn.Module):
-
     def __init__(self, channel=512,reduction=16,kernel_size=49):
         super().__init__()
         self.ca=ChannelAttention(channels=channel,reduction=reduction)
         self.sa=SpatialAttention(kernel_size=kernel_size)
-
-
+        
     def init_weights(self):
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -209,16 +187,14 @@ class EDAM(nn.Module):
                 init.normal_(m.weight, std=0.001)
                 if m.bias is not None:
                     init.constant_(m.bias, 0)
-
+                    
     def forward(self, x):
         b, c, _, _ = x.size()
-        out = x*self.ca(x)
-        out = out*self.sa(out)
-        return out
-
-
-
-
+        residual=x
+        out=x*self.ca(x)
+        out=out*self.sa(out)
+        return out+residual
+        
 class MobileNetV1(nn.Module):
     def __init__(self):
         super(MobileNetV1, self).__init__()
@@ -244,7 +220,6 @@ class MobileNetV1(nn.Module):
         )
         self.avg = nn.AdaptiveAvgPool2d((1,1))
         self.fc = nn.Linear(256, 1000)
-
     def forward(self, x):
         x = self.stage1(x)
         x = self.stage2(x)
@@ -254,4 +229,3 @@ class MobileNetV1(nn.Module):
         x = x.view(x.size(0), -1)
         x = self.fc(x)
         return x
-
