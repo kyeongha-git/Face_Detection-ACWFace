@@ -212,8 +212,8 @@ class EDAM(nn.Module):
 
     def forward(self, x):
         b, c, _, _ = x.size()
-        out=x*self.ca(x)
-        out=out*self.sa(out)
+        out = x*self.ca(x)
+        out = out*self.sa(out)
         return out
 
 
