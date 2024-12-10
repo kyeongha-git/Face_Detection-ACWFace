@@ -4,7 +4,7 @@ import torch.nn as nn
 import torchvision.models._utils as _utils
 import torchvision.models as models
 import torch.nn.functional as F
-from torch.autograd import Variable
+from torch.autograd import Variable 
 from deform_conv import DeformableConv2d
 import numpy as np
 from torch.nn import init    
