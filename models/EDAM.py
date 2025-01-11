@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import init
 import math
-
+ 
 class AdaptiveKernelSize:
     def get_kernel_size(channels):
         k = math.ceil((math.log2(channels) + 1) / 2)
