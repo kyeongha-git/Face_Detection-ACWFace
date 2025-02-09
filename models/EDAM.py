@@ -52,8 +52,7 @@ class SpatialAttention(nn.Module):
 
 
 
-class CBAMBlock(nn.Module):
-
+class EDAMBlock(nn.Module):
     def __init__(self, channel=512,reduction=16,kernel_size=49):
         super().__init__()
         self.ca=ChannelAttention(channel=channel,reduction=reduction)
