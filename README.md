@@ -97,7 +97,8 @@ ACWFace에서 추가된 레이어들을 RetinaFace에서 하나씩 추가하며 
 추후에는, 본 모델을 RetinaFace보다 Flops가 더 낮게 소모하면서 성능은 유지할 수 있도록 경량화할 예정입니다.
 
 # Reference
-RetinaFace paper: https://arxiv.org/abs/1905.00641
-RetinaFace Code: https://github.com/biubug6/Pytorch_Retinaface
-FDLite: https://arxiv.org/abs/2406.19107
-ACWFace Paper: https://www.spiedigitallibrary.org/journals/journal-of-electronic-imaging/volume-31/issue-1/013012/ACWFace-efficient-and-lightweight-face-detector-based-on-RetinaFace/10.1117/1.JEI.31.1.013012.short
+
+- RetinaFace paper: https://arxiv.org/abs/1905.00641
+- RetinaFace Code: https://github.com/biubug6/Pytorch_Retinaface
+- FDLite: https://arxiv.org/abs/2406.19107
+- ACWFace Paper: https://www.spiedigitallibrary.org/journals/journal-of-electronic-imaging/volume-31/issue-1/013012/ACWFace-efficient-and-lightweight-face-detector-based-on-RetinaFace/10.1117/1.JEI.31.1.013012.short
