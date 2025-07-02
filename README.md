@@ -91,7 +91,6 @@ ACWFace에서 추가된 레이어들을 RetinaFace에서 하나씩 추가하며 
 | RetinaFace + WFPN + SCM | 91.0% | 88.6% | 74.7% | 1.304G | 523.986K |
 | RetinaFace + WFPN + SCM + EDAM (ACWFace) | 91.4% | 89.2% | 75.1% | 1.427G | 567.258K |
 | RetinaFace + WFPN + SCM + EDAM + Deformable Convolution (Ours) | 91.7% | 89.8% | 76.1% | 1.124G | 478.167K |
-| RetinaFace + WFPN + SCM + EDAM + Deformable Convolution (Ours) | 91.7% | 89.8% | 76.1% | 1.124G | 478.167K |
 
 최종적으로 RetinaFace에서 Detection 성능을 1~3% 상승시켰으며, ACWFace 경량화에 성공하였습니다.
 
