@@ -8,7 +8,7 @@
 본 논문은 RetinaFace보다 더 뛰어난 Detection 성능을 보였지만, Flops가 높아 실시간 사용이 불가하였습니다.
 따라서, 저희는 ACWFace의 성능을 유지하면서 Flops는 RetinaFace와 유사한 수준으로 낮추는 것을 최종 목표로 설정하여 진행했습니다.
 
-# Approach
+# 🤔 Approach
 
 RetinaFace 자체에 대한 이해를 하기 위해 논문 스터디를 진행하였으며, [Code](https://github.com/kyeongha-git/Face_Detection-RetinaFace)를 한 줄씩 분석하며, 실제 데이터셋으로 훈련 및 평가를 진행했습니다.
 또한, 경량화 방향을 잡기 위해 기존에 RetinaFace를 경량화한 논문을 찾아보았습니다. 그 결과, [FDLite]() 논문을 찾았으며 아래와 같은 결과를 얻을 수 있었습니다.
@@ -20,7 +20,7 @@ RetinaFace 자체에 대한 이해를 하기 위해 논문 스터디를 진행�
 
 그 결과, 기존 Convolution 보다 Deformabel Convolution이 더 경량화되며 성능이 유지된다는 연구 결과를 찾았고 이를 적용하여 경량화를 진행했습니다.
 
-# RetinaFace vs ACWFace
+# 📊 RetinaFace vs ACWFace
 
 아래 이미지는 RetinaFace의 기본 구조입니다. 
 - Backbone: 이미지의 특성을 추출하기 위해 기존 CNN 모델을 학습합니다. (논문에서는 ResNet50을 사용하였지만, 경량화를 위해 MobileNet 0.25를 사용합니다.)
@@ -37,7 +37,7 @@ RetinaFace 자체에 대한 이해를 하기 위해 논문 스터디를 진행�
 
 ![image](https://github.com/user-attachments/assets/e04b0c0b-40d0-4e68-9eac-9eb2bfd54edf)
 
-# Detail
+# 📄 Detail
 
 ## FPN vs WFPN
 ![image](https://github.com/user-attachments/assets/b13781a5-3e3d-471d-bb4d-bcfd6521b0bc)
